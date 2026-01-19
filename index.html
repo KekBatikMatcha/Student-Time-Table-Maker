@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Student Timetable Maker</title>
+  <title>Z • TimetableMaker</title>
 
   <!-- PNG Export -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -588,7 +589,16 @@
       .btn{ width: 100%; justify-content:center; }
       .boardActions{ width:100%; }
     }
-  </style>
+  
+    footer.siteFooter{
+      max-width:1320px;
+      margin: 0 auto 24px;
+      padding: 0 14px;
+      color: var(--ui-muted);
+      font-size: 12px;
+      text-align: center;
+    }
+</style>
 </head>
 
 <body>
@@ -598,11 +608,8 @@
       <div class="head">
         <div class="titleRow">
           <div>
-            <h1>Timetable Scheduler Maker</h1>
-            <div class="sub">
-              ✅ No dragging / resizing blocks • Custom days • Custom time labels • Full print + download preview
-            </div>
-          </div>
+            <h1>Z • TimetableMaker</h1>
+</div>
           <div class="badge" id="countBadge">0 classes</div>
         </div>
       </div>
@@ -610,15 +617,14 @@
       <div class="body">
 
         <!-- ✅ GROUP 1: Paper / Title / Layout -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Paper & Header</div>
-              <div class="gSub">Title, subtitle, title position, overlay darkness, orientation, background theme/upload.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">Layout</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
@@ -675,24 +681,20 @@
               </div>
               <div>
                 <label>Quick Tip</label>
-                <div class="sub" style="margin-top:10px">
-                  Click ✎ on class = edit • Right click class = menu • Double click cell = set day/time.
-                </div>
-              </div>
+</div>
             </div>
           </div>
         </details>
 
         <!-- ✅ GROUP 2: Days -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Days</div>
-              <div class="gSub">Add, rename, remove, and reset timetable days.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">Mon–Fri+</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
@@ -710,24 +712,22 @@
                 </div>
               </div>
               <div class="btns" style="margin-top:10px">
-                <button class="btn" id="addDayBtn">➕ Add Day</button>
-                <button class="btn danger" id="resetDaysBtn">↺ Reset Days</button>
+                <button class="btn" id="addDayBtn">Add Day</button>
+                <button class="btn danger" id="resetDaysBtn">Reset Days</button>
               </div>
-              <div class="sub">Tip: day code must be unique (Mon, Tue, Wed...).</div>
-            </div>
+</div>
           </div>
         </details>
 
         <!-- ✅ GROUP 3: Time Range -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Time Range</div>
-              <div class="gSub">Set start & end hours. Rebuilds the grid and clamps durations safely.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">Slots</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
@@ -743,35 +743,27 @@
             </div>
 
             <div class="btns">
-              <button class="btn" id="applyTimeBtn">⏱️ Apply Time Range</button>
-              <button class="btn danger" id="resetTimeBtn">↺ Reset Time</button>
+              <button class="btn" id="applyTimeBtn">Apply Time Range</button>
+              <button class="btn danger" id="resetTimeBtn">Reset Time</button>
             </div>
-
-            <div class="sub">
-              After applying, the grid rebuilds and class durations will clamp if needed.
-            </div>
-          </div>
+</div>
         </details>
 
         <!-- ✅ GROUP 4: Timetable Color Settings -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Timetable Color Settings</div>
-              <div class="gSub">Grid background, grid lines, headers, cells, and opacity sliders.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">Theme</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
             <div class="row">
-              <div class="sub" style="font-weight:1000; color:rgba(255,255,255,.92)">
-                Timetable Color Settings
-              </div>
-              <div class="sub">Make it “white timetable” by choosing white colors + lowering opacity.</div>
-            </div>
+
+</div>
 
             <div class="row two">
               <div>
@@ -820,15 +812,14 @@
         </details>
 
         <!-- ✅ GROUP 5: Add / Manage Class -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Class Editor</div>
-              <div class="gSub">Add subjects, set day/time/duration, color & style, and clear classes.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">Classes</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
@@ -889,36 +880,28 @@
             </div>
 
             <div class="btns">
-              <button class="btn primary" id="addBtn">➕ Add</button>
-              <button class="btn ghost" id="clearBtn">🧹 Clear All</button>
+              <button class="btn primary" id="addBtn">Add</button>
+              <button class="btn ghost" id="clearBtn">Clear All</button>
             </div>
           </div>
         </details>
 
         <!-- ✅ GROUP 6: Export -->
-        <details class="groupDetails" open>
+        <details class="groupDetails">
           <summary>
             <div class="sumLeft">
               <div class="gTitle">Export</div>
-              <div class="gSub">Print and Save (preview + download PNG) with auto-compact layout.</div>
-            </div>
+</div>
             <div class="sumRight">
               <div class="gBadge">PNG / Print</div>
-              <div class="chev">›</div>
+              <div class="chev">></div>
             </div>
           </summary>
           <div class="groupInner">
             <div class="btns">
-              <button class="btn" id="printBtn">🖨️ Print</button>
-              <button class="btn primary" id="saveBtn">💾 Save (Preview & Download)</button>
+              <button class="btn" id="printBtn">Print</button>
             </div>
-
-            <div class="hint">
-              ✅ Restored: timetable color settings + opacity sliders.<br/>
-              ✅ Added: custom days + custom time range (rebuilds grid).<br/>
-              ✅ Removed: dragging blocks (no Canva drag).
-            </div>
-          </div>
+</div>
         </details>
 
       </div>
@@ -929,7 +912,7 @@
       <div class="boardHead">
         <h2>Your Weekly Timetable</h2>
         <div class="boardActions">
-          <button class="btn" id="refreshBtn">↺ Refresh</button>
+          <button class="btn" id="refreshBtn">Refresh</button>
         </div>
       </div>
 
@@ -963,7 +946,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <h3>Edit Class</h3>
-        <button class="x" id="closeModal">✕</button>
+        <button class="x" id="closeModal">Close</button>
       </div>
       <div class="modalBody">
         <div class="row">
@@ -1023,8 +1006,8 @@
         </div>
 
         <div class="btns">
-          <button class="btn primary" id="saveEdit">💾 Save</button>
-          <button class="btn danger" id="deleteItem">🗑️ Delete</button>
+          <button class="btn primary" id="saveEdit">Save Save</button>
+          <button class="btn danger" id="deleteItem">Delete</button>
         </div>
       </div>
     </div>
@@ -1035,7 +1018,7 @@
     <div class="modalCard">
       <div class="modalHead">
         <h3>Preview & Download</h3>
-        <button class="x" id="closePreview">✕</button>
+        <button class="x" id="closePreview">Close</button>
       </div>
       <div class="modalBody">
         <div class="previewGrid">
@@ -1068,14 +1051,9 @@
               <label>File Name</label>
               <input id="dlName" placeholder="timetable.png" value="timetable.png"/>
             </div>
-
-            <div class="miniHint">
-              Preview is exactly what will be downloaded (auto-compact fits full time range).
-            </div>
-
-            <div class="previewActions">
-              <button class="btn" id="regenPreview">↻ Regenerate Preview</button>
-              <button class="btn primary" id="downloadPng">⬇️ Download PNG</button>
+<div class="previewActions">
+              <button class="btn" id="regenPreview">Regenerate Preview</button>
+              <button class="btn primary" id="downloadPng">Download PNG</button>
             </div>
           </div>
 
@@ -1209,7 +1187,7 @@ let settings = {
   paperTheme: "midnight",
   customBgDataUrl: "",
   ttTitle: "Your Timetable",
-  ttSub: "Make it cantik ✨",
+  ttSub: "",
   titleAlign: "left",
 
   // days + labels
@@ -1608,11 +1586,11 @@ function render(){
           <div class="bTitle">${escapeHtml(it.title || "Untitled")}</div>
           <div class="bMeta">${escapeHtml(startT)}–${escapeHtml(endT)} • ${it.dur}h</div>
         </div>
-        <button class="editMini" type="button" title="Edit">✎</button>
+        <button class="editMini" type="button" title="Edit">Edit</button>
       </div>
       <div class="bTiny">
-        ${it.loc ? `<span class="pill">📍 ${escapeHtml(it.loc)}</span>` : ""}
-        ${it.lec ? `<span class="pill">👤 ${escapeHtml(it.lec)}</span>` : ""}
+        ${it.loc ? `<span class="pill">${escapeHtml(it.loc)}</span>` : ""}
+        ${it.lec ? `<span class="pill">${escapeHtml(it.lec)}</span>` : ""}
       </div>
     `;
 
@@ -2018,7 +1996,7 @@ $("#printBtn").addEventListener("click", ()=>{
 
     win.document.open();
     win.document.write(`
-<!doctype html><html><head><meta charset="utf-8"/><title>Print Timetable</title>
+<!doctype html><html><head><meta charset="utf-8"/><title>Z • TimetableMaker</title>
 <style>
 *{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 body{ margin:0; background:white; display:flex; justify-content:center; padding:12px; font-family: ui-sans-serif, system-ui; }
@@ -2068,7 +2046,9 @@ body{ margin:0; background:white; display:flex; justify-content:center; padding:
 .paperMark{ font-size:12px; color:rgba(255,255,255,.92); border:1px solid rgba(255,255,255,.18); padding:8px 10px; border-radius:999px; background: rgba(0,0,0,.14); }
 @page{ margin: 10mm; }
 </style></head><body>${paper.outerHTML}
-<script>window.onload=()=>{window.focus();window.print();};<\/script></body></html>`);
+<script>window.onload=()=>{window.focus();window.print();};<\/script>
+  <footer class="siteFooter">© Zee • Z TimetableMaker</footer>
+</body></html>`);
     win.document.close();
   });
 });
