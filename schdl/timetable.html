@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Timetable Maker</title>
+
+  <!-- PNG Export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    :root{
+      /* DARK BLUE GLASS THEME (UI) */
+      --ui-bg: #060913;
+      --ui-text: #eaf0ff;
+      --ui-muted: rgba(234,240,255,.72);
+      --ui-line: rgba(255,255,255,.12);
+      --ui-card: rgba(10,14,30,.62);
+      --ui-card2: rgba(10,14,30,.32);
+      --ui-accent: #7c5cff;
+
+      --radius: 18px;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+
+      /* Online forest background on body */
+      --forest-url: url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&q=60");
+
+      /* Timetable paper background will be set by theme (or upload) */
+      --tt-bg: none;
+      --tt-overlay: rgba(0,0,0,.28);
+
+      /* Paper size (preview only) */
+      --page-w: 1180px;
+      --page-h: 820px;
+
+      /* Grid styling (actual variables used by grid) */
+      --grid-line: rgba(255,255,255,.16);
+      --grid-bg: rgba(0,0,0,.16);
+      --dayhead-bg: rgba(255,255,255,.10);
+      --time-bg: rgba(255,255,255,.08);
+      --cell-bg: rgba(255,255,255,.04);
+
+      /* Solid/tint controls */
+      --paperTop-bg: transparent;              /* header bar transparent */
+      --gridwrap-solid: rgba(10,16,34,.40);    /* grid tint (auto lighter when upload exists) */
+
+      --slot-h: 56px;
+
+      --paper-title-size: 20px;
+      --paper-sub-size: 12px;
+
+      /* Title alignment */
+      --title-align: flex-start; /* flex-start | center | flex-end */
+      --title-text-align: left;  /* left | center | right */
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      min-height:100vh;
+      color:var(--ui-text);
+
+      background:
+        radial-gradient(1200px 700px at 25% 15%, rgba(124,92,255,.20), transparent 60%),
+        radial-gradient(900px 600px at 80% 25%, rgba(0,210,255,.10), transparent 58%),
+        linear-gradient(180deg, rgba(0,0,0,.58), rgba(0,0,0,.65)),
+        var(--forest-url);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .wrap{
+      max-width: 1320px;
+      margin: 18px auto;
+      padding: 0 14px 40px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap: 14px;
+      align-items:start;
+    }
+
+    .panel, .board{
+      background: linear-gradient(180deg, var(--ui-card), var(--ui-card2));
+      border: 1px solid var(--ui-line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+
+    .head{
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--ui-line);
+      background: rgba(255,255,255,.04);
+    }
+
+    .titleRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    h1{ margin:0 0 4px 0; font-size:18px; letter-spacing:.2px; }
+    .sub{ font-size:12px; color:var(--ui-muted); line-height:1.35; }
+    .badge{
+      padding:8px 10px;
+      font-size:12px;
+      border-radius:999px;
+      border:1px solid var(--ui-line);
+      background:rgba(255,255,255,.06);
+      color:var(--ui-muted);
+      white-space:nowrap;
+    }
+
+    .body{ padding: 14px 16px 16px; }
+    .row{ display:grid; gap:10px; margin-bottom:10px; }
+    .two{ grid-template-columns: 1fr 1fr; }
+    .three{ grid-template-columns: 1fr 1fr 1fr; }
+
+    label{ font-size:12px; color:var(--ui-muted); margin-bottom:6px; display:block; }
+    input, select, textarea{
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--ui-line);
+      background: rgba(0,0,0,.25);
+      color:var(--ui-text);
+      padding:10px 12px;
+      outline:none;
+      transition:.18s;
+    }
+    textarea{ min-height:70px; resize:vertical; }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(124,92,255,.55);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.14);
+    }
+
+    .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+    .btn{
+      border:1px solid var(--ui-line);
+      background: rgba(255,255,255,.08);
+      color:var(--ui-text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight: 900;
+      transition:.18s;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.11); }
+    .btn.primary{
+      border-color: rgba(124,92,255,.55);
+      background: rgba(124,92,255,.20);
+    }
+    .btn.danger{
+      border-color: rgba(255,90,90,.45);
+      background: rgba(255,90,90,.14);
+    }
+    .btn.ghost{ background: transparent; }
+
+    .hint{
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(255,255,255,.16);
+      font-size: 12px;
+      color: var(--ui-muted);
+      line-height: 1.5;
+    }
+
+    /* ✅ SETTINGS GROUPS (classification) */
+    .group{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 12px 12px 10px;
+      margin-bottom: 12px;
+    }
+    .groupHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .gTitle{
+      font-weight: 1000;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.94);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .gSub{
+      font-size: 12px;
+      color: var(--ui-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .gBadge{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.86);
+      font-weight: 900;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    details.groupDetails{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 0;
+      overflow:hidden;
+      margin-bottom: 12px;
+    }
+    details.groupDetails > summary{
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
+      padding: 12px 12px 10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      background: rgba(255,255,255,.03);
+    }
+    details.groupDetails > summary::-webkit-details-marker{ display:none; }
+    .sumLeft{ min-width:0; }
+    .sumRight{ display:flex; align-items:center; gap:10px; }
+    .chev{
+      width: 28px; height: 28px;
+      display:grid; place-items:center;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      font-weight: 1000;
+      color: rgba(255,255,255,.9);
+    }
+    details[open] .chev{ transform: rotate(90deg); }
+    .groupInner{ padding: 0 12px 10px; }
+
+    /* Board: STICKY so it follows scroll */
+    .board{
+      position: sticky;
+      top: 14px;
+      align-self: start;
+    }
+
+    .boardHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--ui-line);
+      background: rgba(255,255,255,.04);
+    }
+    .boardHead h2{ margin:0; font-size:16px; }
+    .boardActions{ display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; }
+
+    .pageFrame{
+      width: min(98%, var(--page-w));
+      aspect-ratio: calc(var(--page-w) / var(--page-h));
+      margin: 16px auto 18px;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      overflow:hidden;
+      position:relative;
+
+      background-image:
+        linear-gradient(0deg, var(--tt-overlay), var(--tt-overlay)),
+        var(--tt-bg);
+      background-size: cover;
+      background-position:center;
+      background-repeat:no-repeat;
+    }
+
+    /* Transparent paperTop */
+    .paperTop{
+      position:absolute;
+      left:0; right:0; top:0;
+      padding: 14px 18px 12px;
+      background: var(--paperTop-bg);
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:none;
+    }
+
+    .paperTitles{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      align-items: var(--title-align);
+      text-align: var(--title-text-align);
+      width: 100%;
+    }
+
+    .paperTitle{
+      font-weight: 1000;
+      letter-spacing:.3px;
+      font-size: var(--paper-title-size);
+      line-height:1.1;
+      color:#fff;
+      text-shadow: 0 10px 26px rgba(0,0,0,.45);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      width: 100%;
+    }
+    .paperSub{
+      margin-top: 6px;
+      font-size: var(--paper-sub-size);
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 10px 26px rgba(0,0,0,.45);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      width: 100%;
+    }
+    .paperMark{
+      font-size: 12px;
+      color: rgba(255,255,255,.92);
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.14);
+      text-shadow: 0 10px 26px rgba(0,0,0,.45);
+      white-space:nowrap;
+    }
+
+    /* Grid wrap tint (NOT blur) */
+    .gridWrap{
+      position:absolute;
+      inset:0;
+      padding: 64px 12px 12px;
+      overflow:auto;
+      background: var(--gridwrap-solid);
+      backdrop-filter: none;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 90px repeat(5, 1fr);
+      min-width: 860px;
+      border: 1px solid var(--grid-line);
+      border-radius: 14px;
+      overflow:hidden;
+      background: var(--grid-bg);
+    }
+
+    .cell, .timeCell, .dayHead{
+      border-right: 1px solid var(--grid-line);
+      border-bottom: 1px solid var(--grid-line);
+      padding: 10px;
+      position:relative;
+    }
+
+    .dayHead{
+      font-weight: 1000;
+      font-size: 12px;
+      text-align:center;
+      letter-spacing: .35px;
+      color:#fff;
+      background: var(--dayhead-bg);
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .timeCell{
+      font-size: 12px;
+      text-align:right;
+      padding-right: 12px;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,.92);
+      background: var(--time-bg);
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .cell{
+      height: var(--slot-h);
+      background: var(--cell-bg);
+    }
+
+    .block{
+      position:absolute;
+      inset: 6px;
+      border-radius: 14px;
+      padding: 10px 10px 9px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 12px 26px rgba(0,0,0,.30);
+      cursor: default; /* ✅ no drag */
+      user-select:none;
+      overflow:hidden;
+    }
+
+    .bTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .bTitle{ font-weight:1000; font-size:13px; line-height:1.1; letter-spacing:.2px; color:#fff; }
+    .bMeta{ font-size:11px; opacity:.95; color: rgba(255,255,255,.90); margin-top:6px; }
+    .bTiny{ font-size:11px; opacity:.95; display:flex; gap:8px; flex-wrap:wrap; }
+    .pill{
+      display:inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.14);
+      font-weight: 900;
+      color:#fff;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    /* mini edit button */
+    .editMini{
+      pointer-events:auto;
+      flex:0 0 auto;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.92);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor:pointer;
+      font-weight: 1000;
+      line-height: 1;
+    }
+    .editMini:hover{ background: rgba(255,255,255,.10); }
+
+    /* Popover */
+    .popover{
+      position: fixed;
+      z-index: 80;
+      min-width: 200px;
+      background: rgba(10,14,30,.92);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      padding: 10px;
+      display:none;
+      backdrop-filter: blur(10px);
+      color: var(--ui-text);
+    }
+    .popover.show{ display:block; }
+    .popTitle{ font-weight:1000; font-size:12px; margin:0 0 8px 0; color: rgba(255,255,255,.92); }
+    .popBtns{ display:flex; gap:8px; }
+    .popBtn{
+      flex:1;
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-weight: 1000;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--ui-text);
+      cursor:pointer;
+    }
+    .popBtn:hover{ background: rgba(255,255,255,.11); }
+    .popBtn.danger{
+      background: rgba(255,90,90,.14);
+      border-color: rgba(255,90,90,.30);
+    }
+
+    /* Modal base */
+    .modal{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.60);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 90;
+    }
+    .modal.show{ display:flex; }
+
+    .modalCard{
+      width: min(780px, 100%);
+      background: rgba(10,14,30,.94);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+      color: var(--ui-text);
+    }
+    .modalHead{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: rgba(255,255,255,.04);
+    }
+    .modalHead h3{ margin:0; font-size: 14px; }
+    .x{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--ui-text);
+      border-radius: 12px;
+      cursor:pointer;
+      padding: 8px 10px;
+      font-weight: 1000;
+    }
+    .modalBody{ padding: 14px 16px 16px; }
+
+    /* Preview modal layout */
+    .previewGrid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      align-items:start;
+    }
+    .previewBox{
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding: 10px;
+      overflow:auto;
+      max-height: 62vh;
+    }
+    .miniHint{ font-size:12px; color: var(--ui-muted); line-height:1.4; margin-top:8px; }
+    .previewActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+
+    /* Days chips */
+    .chips{ display:flex; gap:10px; flex-wrap:wrap; }
+    .chip{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--ui-line);
+      background: rgba(255,255,255,.06);
+    }
+    .chip .tinyBtn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.08);
+      color: var(--ui-text);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor:pointer;
+      font-weight: 1000;
+      line-height:1;
+    }
+    .chip .tinyBtn:hover{ background: rgba(255,255,255,.11); }
+    .chip .name{
+      font-weight: 1000;
+      letter-spacing: .2px;
+      color: rgba(255,255,255,.92);
+      max-width: 160px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    hr.sep{
+      border:0;
+      border-top:1px dashed rgba(255,255,255,.16);
+      margin: 14px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+      .board{ position: static; }
+    }
+    @media (max-width: 520px){
+      .head, .body, .boardHead{ padding-left: 12px; padding-right: 12px; }
+      .row.three{ grid-template-columns: 1fr; }
+      .two{ grid-template-columns: 1fr; }
+      .grid{ min-width: 680px; }
+      :root{ --paper-title-size: 18px; --paper-sub-size: 11px; }
+      .previewGrid{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 380px){
+      .grid{ min-width: 640px; }
+      .btn{ width: 100%; justify-content:center; }
+      .boardActions{ width:100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- Left: Editor -->
+    <section class="panel">
+      <div class="head">
+        <div class="titleRow">
+          <div>
+            <h1>Timetable Scheduler Maker</h1>
+            <div class="sub">
+              ✅ No dragging / resizing blocks • Custom days • Custom time labels • Full print + download preview
+            </div>
+          </div>
+          <div class="badge" id="countBadge">0 classes</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- ✅ GROUP 1: Paper / Title / Layout -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Paper & Header</div>
+              <div class="gSub">Title, subtitle, title position, overlay darkness, orientation, background theme/upload.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">Layout</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="row">
+              <label>Timetable Title</label>
+              <input id="ttTitle" placeholder="e.g. SEM 6 TIMETABLE (2026)" />
+            </div>
+
+            <div class="row">
+              <label>Timetable Subtitle</label>
+              <input id="ttSub" placeholder="e.g. Week 1–14 • UMS • Network Engineering" />
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Title Position</label>
+                <select id="titleAlign">
+                  <option value="left">Left</option>
+                  <option value="center">Middle</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div>
+                <label>Overlay Darkness</label>
+                <input id="overlay" type="range" min="0" max="80" value="28"/>
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Timetable Background Theme</label>
+                <select id="paperTheme">
+                  <option value="midnight">Midnight (Default)</option>
+                  <option value="notebook">Notebook</option>
+                  <option value="gridpaper">Grid Paper</option>
+                  <option value="minimal">Minimal Clean</option>
+                  <option value="galaxy">Galaxy</option>
+                  <option value="sunset">Sunset</option>
+                </select>
+              </div>
+              <div>
+                <label>Upload background (optional)</label>
+                <input id="bgUpload" type="file" accept="image/*"/>
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Paper Orientation</label>
+                <select id="orientation">
+                  <option value="landscape">Landscape</option>
+                  <option value="portrait">Portrait</option>
+                </select>
+              </div>
+              <div>
+                <label>Quick Tip</label>
+                <div class="sub" style="margin-top:10px">
+                  Click ✎ on class = edit • Right click class = menu • Double click cell = set day/time.
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ✅ GROUP 2: Days -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Days</div>
+              <div class="gSub">Add, rename, remove, and reset timetable days.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">Mon–Fri+</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="row">
+              <label>Days (click Rename / Remove)</label>
+              <div class="chips" id="daysChips"></div>
+              <div class="row two" style="margin:0">
+                <div>
+                  <label>Add Day (short code)</label>
+                  <input id="newDayCode" placeholder="e.g. Sat" maxlength="6"/>
+                </div>
+                <div>
+                  <label>Add Day (label)</label>
+                  <input id="newDayLabel" placeholder="e.g. SATURDAY"/>
+                </div>
+              </div>
+              <div class="btns" style="margin-top:10px">
+                <button class="btn" id="addDayBtn">➕ Add Day</button>
+                <button class="btn danger" id="resetDaysBtn">↺ Reset Days</button>
+              </div>
+              <div class="sub">Tip: day code must be unique (Mon, Tue, Wed...).</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ✅ GROUP 3: Time Range -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Time Range</div>
+              <div class="gSub">Set start & end hours. Rebuilds the grid and clamps durations safely.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">Slots</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="row two">
+              <div>
+                <label>Start Hour</label>
+                <input id="startHour" type="number" min="0" max="23" value="8"/>
+              </div>
+              <div>
+                <label>End Hour</label>
+                <input id="endHour" type="number" min="1" max="24" value="22"/>
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="btn" id="applyTimeBtn">⏱️ Apply Time Range</button>
+              <button class="btn danger" id="resetTimeBtn">↺ Reset Time</button>
+            </div>
+
+            <div class="sub">
+              After applying, the grid rebuilds and class durations will clamp if needed.
+            </div>
+          </div>
+        </details>
+
+        <!-- ✅ GROUP 4: Timetable Color Settings -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Timetable Color Settings</div>
+              <div class="gSub">Grid background, grid lines, headers, cells, and opacity sliders.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">Theme</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="row">
+              <div class="sub" style="font-weight:1000; color:rgba(255,255,255,.92)">
+                Timetable Color Settings
+              </div>
+              <div class="sub">Make it “white timetable” by choosing white colors + lowering opacity.</div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Grid Background Color</label>
+                <input id="gridBgHex" type="color" value="#0c1226">
+              </div>
+              <div>
+                <label>Grid Background Opacity (%)</label>
+                <input id="gridOpacity" type="range" min="0" max="100" value="16">
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Grid Line Color</label>
+                <input id="gridLineHex" type="color" value="#ffffff">
+              </div>
+              <div>
+                <label>Grid Line Opacity (%)</label>
+                <input id="lineOpacity" type="range" min="0" max="100" value="16">
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Header Color (Days + Time)</label>
+                <input id="dayBgHex" type="color" value="#ffffff">
+              </div>
+              <div>
+                <label>Header Opacity (%)</label>
+                <input id="headOpacity" type="range" min="0" max="100" value="10">
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Cell Background Color</label>
+                <input id="cellBgHex" type="color" value="#ffffff">
+              </div>
+              <div>
+                <label>Cell Opacity (%)</label>
+                <input id="cellOpacity" type="range" min="0" max="100" value="4">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ✅ GROUP 5: Add / Manage Class -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Class Editor</div>
+              <div class="gSub">Add subjects, set day/time/duration, color & style, and clear classes.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">Classes</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="row">
+              <label>Subject / Activity</label>
+              <input id="title" placeholder="e.g. KP35203 Network Programming"/>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Day</label>
+                <select id="day"></select>
+              </div>
+              <div>
+                <label>Start Time</label>
+                <select id="start"></select>
+              </div>
+            </div>
+
+            <div class="row three">
+              <div>
+                <label>Duration</label>
+                <select id="dur">
+                  <option value="1">1 hour</option>
+                  <option value="2">2 hours</option>
+                  <option value="3">3 hours</option>
+                  <option value="4">4 hours</option>
+                </select>
+              </div>
+              <div>
+                <label>Location</label>
+                <input id="loc" placeholder="e.g. Lab BK3"/>
+              </div>
+              <div>
+                <label>Lecturer</label>
+                <input id="lec" placeholder="e.g. Dr. ____"/>
+              </div>
+            </div>
+
+            <div class="row">
+              <label>Notes (optional)</label>
+              <textarea id="notes" placeholder="e.g. Bring laptop, quiz week 5"></textarea>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label>Block Color</label>
+                <input id="color" type="color" value="#7c5cff" />
+              </div>
+              <div>
+                <label>Block Style</label>
+                <select id="style">
+                  <option value="solid">Solid</option>
+                  <option value="gradient">Gradient</option>
+                  <option value="soft">Soft</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btns">
+              <button class="btn primary" id="addBtn">➕ Add</button>
+              <button class="btn ghost" id="clearBtn">🧹 Clear All</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- ✅ GROUP 6: Export -->
+        <details class="groupDetails" open>
+          <summary>
+            <div class="sumLeft">
+              <div class="gTitle">Export</div>
+              <div class="gSub">Print and Save (preview + download PNG) with auto-compact layout.</div>
+            </div>
+            <div class="sumRight">
+              <div class="gBadge">PNG / Print</div>
+              <div class="chev">›</div>
+            </div>
+          </summary>
+          <div class="groupInner">
+            <div class="btns">
+              <button class="btn" id="printBtn">🖨️ Print</button>
+              <button class="btn primary" id="saveBtn">💾 Save (Preview & Download)</button>
+            </div>
+
+            <div class="hint">
+              ✅ Restored: timetable color settings + opacity sliders.<br/>
+              ✅ Added: custom days + custom time range (rebuilds grid).<br/>
+              ✅ Removed: dragging blocks (no Canva drag).
+            </div>
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- Right: Board -->
+    <section class="board">
+      <div class="boardHead">
+        <h2>Your Weekly Timetable</h2>
+        <div class="boardActions">
+          <button class="btn" id="refreshBtn">↺ Refresh</button>
+        </div>
+      </div>
+
+      <div class="pageFrame" id="pageFrame">
+        <div class="paperTop">
+          <div class="paperTitles">
+            <div class="paperTitle" id="paperTitle">Your Timetable</div>
+            <div class="paperSub" id="paperSub">Subtitle</div>
+          </div>
+          <div class="paperMark" id="paperMark">08:00–22:00 • Mon–Fri</div>
+        </div>
+
+        <div class="gridWrap" id="gridWrap">
+          <div class="grid" id="grid"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Popover -->
+  <div class="popover" id="popover">
+    <div class="popTitle" id="popTitle">Class</div>
+    <div class="popBtns">
+      <button class="popBtn" id="popEdit">Edit</button>
+      <button class="popBtn danger" id="popDelete">Delete</button>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="modal">
+    <div class="modalCard">
+      <div class="modalHead">
+        <h3>Edit Class</h3>
+        <button class="x" id="closeModal">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="row">
+          <label>Subject / Activity</label>
+          <input id="m_title"/>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label>Day</label>
+            <select id="m_day"></select>
+          </div>
+          <div>
+            <label>Start Time</label>
+            <select id="m_start"></select>
+          </div>
+        </div>
+
+        <div class="row three">
+          <div>
+            <label>Duration</label>
+            <select id="m_dur">
+              <option value="1">1 hour</option>
+              <option value="2">2 hours</option>
+              <option value="3">3 hours</option>
+              <option value="4">4 hours</option>
+            </select>
+          </div>
+          <div>
+            <label>Location</label>
+            <input id="m_loc"/>
+          </div>
+          <div>
+            <label>Lecturer</label>
+            <input id="m_lec"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Notes</label>
+          <textarea id="m_notes"></textarea>
+        </div>
+
+        <div class="row two">
+          <div>
+            <label>Block Color</label>
+            <input id="m_color" type="color"/>
+          </div>
+          <div>
+            <label>Block Style</label>
+            <select id="m_style">
+              <option value="solid">Solid</option>
+              <option value="gradient">Gradient</option>
+              <option value="soft">Soft</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="btn primary" id="saveEdit">💾 Save</button>
+          <button class="btn danger" id="deleteItem">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview & Download Modal -->
+  <div class="modal" id="previewModal">
+    <div class="modalCard">
+      <div class="modalHead">
+        <h3>Preview & Download</h3>
+        <button class="x" id="closePreview">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="previewGrid">
+          <!-- Left: options -->
+          <div>
+            <div class="row">
+              <label>Download Size</label>
+              <select id="dlSize">
+                <option value="auto">Auto (detect screen)</option>
+                <option value="a4">A4 (3508×2480)</option>
+                <option value="a3">A3 (4961×3508)</option>
+                <option value="1080p">1080p (1920×1080)</option>
+                <option value="2k">2K (2560×1440)</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+
+            <div class="row two" id="customSizeRow" style="display:none">
+              <div>
+                <label>Custom W</label>
+                <input id="customW" type="number" min="800" value="2400"/>
+              </div>
+              <div>
+                <label>Custom H</label>
+                <input id="customH" type="number" min="800" value="1600"/>
+              </div>
+            </div>
+
+            <div class="row">
+              <label>File Name</label>
+              <input id="dlName" placeholder="timetable.png" value="timetable.png"/>
+            </div>
+
+            <div class="miniHint">
+              Preview is exactly what will be downloaded (auto-compact fits full time range).
+            </div>
+
+            <div class="previewActions">
+              <button class="btn" id="regenPreview">↻ Regenerate Preview</button>
+              <button class="btn primary" id="downloadPng">⬇️ Download PNG</button>
+            </div>
+          </div>
+
+          <!-- Right: preview -->
+          <div class="previewBox">
+            <img id="previewImg" alt="Preview" style="width:100%; height:auto; display:block; border-radius:12px; border:1px solid rgba(255,255,255,.12)"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ----------------- Defaults ----------------- */
+const DEFAULT_DAYS = ["Mon","Tue","Wed","Thu","Fri"];
+const DEFAULT_DAY_LABEL = {Mon:"MON", Tue:"TUE", Wed:"WED", Thu:"THU", Fri:"FRI"};
+
+const DEFAULT_START_HOUR = 8;
+const DEFAULT_END_HOUR = 22;
+
+let DAYS = [...DEFAULT_DAYS];
+let DAY_LABEL = {...DEFAULT_DAY_LABEL};
+
+let START_HOUR = DEFAULT_START_HOUR;
+let END_HOUR = DEFAULT_END_HOUR;
+
+let SLOTS = [];
+
+/* ----------------- Storage ----------------- */
+const STORAGE_KEY = "timetable_v7_items";
+const SETTINGS_KEY = "timetable_v7_settings";
+
+/* ----------------- Paper Themes (SVG data urls) ----------------- */
+function svgDataUrl(svg){ return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); }
+
+const PAPER_THEMES = {
+  midnight: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c1430"/>
+      <stop offset="1" stop-color="#050911"/>
+    </linearGradient>
+    <radialGradient id="r" cx="20%" cy="18%" r="70%">
+      <stop offset="0" stop-color="rgba(124,92,255,.25)"/>
+      <stop offset="1" stop-color="rgba(124,92,255,0)"/>
+    </radialGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <rect width="100%" height="100%" fill="url(#r)"/>
+  <rect width="100%" height="100%" fill="url(#grid)" opacity="0.7"/>
+</svg>`),
+
+  notebook: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <rect width="100%" height="100%" fill="#0b1224"/>
+  <g opacity="0.85">
+    <rect x="0" y="0" width="100%" height="100%" fill="rgba(255,255,255,.02)"/>
+    <path d="M140 0V1200" stroke="rgba(255,120,120,.25)" stroke-width="5"/>
+    ${Array.from({length:22}).map((_,i)=>`<path d="M0 ${90+i*48}H1800" stroke="rgba(255,255,255,.08)" stroke-width="2"/>`).join("")}
+  </g>
+</svg>`),
+
+  gridpaper: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <rect width="100%" height="100%" fill="#07101f"/>
+  <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M40 0H0V40" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+  </pattern>
+  <rect width="100%" height="100%" fill="url(#p)"/>
+  <rect width="100%" height="100%" fill="rgba(124,92,255,.08)"/>
+</svg>`),
+
+  minimal: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1630"/>
+      <stop offset="1" stop-color="#070b14"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <circle cx="300" cy="220" r="300" fill="rgba(255,255,255,.03)"/>
+  <circle cx="1550" cy="980" r="420" fill="rgba(124,92,255,.06)"/>
+</svg>`),
+
+  galaxy: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <rect width="100%" height="100%" fill="#040510"/>
+  <radialGradient id="neb" cx="30%" cy="25%" r="70%">
+    <stop offset="0" stop-color="rgba(124,92,255,.25)"/>
+    <stop offset="1" stop-color="rgba(124,92,255,0)"/>
+  </radialGradient>
+  <rect width="100%" height="100%" fill="url(#neb)"/>
+  ${Array.from({length:220}).map(()=> {
+    const x=Math.floor(Math.random()*1800), y=Math.floor(Math.random()*1200);
+    const r=(Math.random()*1.4+0.4).toFixed(2);
+    const o=(Math.random()*0.7+0.2).toFixed(2);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="rgba(255,255,255,${o})"/>`;
+  }).join("")}
+</svg>`),
+
+  sunset: svgDataUrl(`
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15123a"/>
+      <stop offset="0.45" stop-color="#3c1b53"/>
+      <stop offset="1" stop-color="#0b1224"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <radialGradient id="sun" cx="70%" cy="25%" r="60%">
+    <stop offset="0" stop-color="rgba(255,180,80,.20)"/>
+    <stop offset="1" stop-color="rgba(255,180,80,0)"/>
+  </radialGradient>
+  <rect width="100%" height="100%" fill="url(#sun)"/>
+</svg>`)
+};
+
+/* ----------------- State ----------------- */
+let items = [];
+let editingId = null;
+
+let settings = {
+  orientation: "landscape",
+  overlay: 28,
+  paperTheme: "midnight",
+  customBgDataUrl: "",
+  ttTitle: "Your Timetable",
+  ttSub: "Make it cantik ✨",
+  titleAlign: "left",
+
+  // days + labels
+  days: [...DEFAULT_DAYS],
+  dayLabel: {...DEFAULT_DAY_LABEL},
+
+  // time range
+  startHour: DEFAULT_START_HOUR,
+  endHour: DEFAULT_END_HOUR,
+
+  // grid theme colors
+  gridBgHex: "#0c1226",
+  gridLineHex: "#ffffff",
+  dayBgHex: "#ffffff",
+  cellBgHex: "#ffffff",
+
+  gridOpacity: 16,
+  lineOpacity: 16,
+  headOpacity: 10,
+  cellOpacity: 4
+};
+
+const $ = (q)=>document.querySelector(q);
+const uid = ()=> Math.random().toString(16).slice(2) + Date.now().toString(16);
+function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+function hexToRgb(hex){
+  const h = String(hex||"").replace("#","").padEnd(6,"0").slice(0,6);
+  const r = parseInt(h.substring(0,2), 16) || 0;
+  const g = parseInt(h.substring(2,4), 16) || 0;
+  const b = parseInt(h.substring(4,6), 16) || 0;
+  return {r,g,b};
+}
+function hexToRgba(hex, a){
+  const {r,g,b} = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function styleBackground(color, style){
+  if(style === "solid") return `linear-gradient(180deg, ${color}, ${color})`;
+  if(style === "gradient") return `linear-gradient(135deg, ${color}, rgba(255,255,255,.14))`;
+  return `linear-gradient(135deg, ${hexToRgba(color,.45)}, rgba(0,0,0,.12))`;
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, (m)=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* ----------------- ✅ NEW: Wait for images inside element (improves export sharpness) ----------------- */
+async function waitForImages(el){
+  const imgs = Array.from(el.querySelectorAll("img"));
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise(res => {
+      img.addEventListener("load", res, { once:true });
+      img.addEventListener("error", res, { once:true });
+    });
+  }));
+}
+
+/* ----------------- Save/Load ----------------- */
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  $("#countBadge").textContent = `${items.length} class${items.length===1?"":"es"}`;
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ const data = JSON.parse(raw); if(Array.isArray(data)) items = data; }
+  }catch(e){}
+  try{
+    const sraw = localStorage.getItem(SETTINGS_KEY);
+    if(sraw){
+      const s = JSON.parse(sraw);
+      if(s && typeof s==="object") settings = {...settings, ...s};
+    }
+  }catch(e){}
+}
+
+/* ----------------- Slots / Days from settings ----------------- */
+function rebuildSlots(){
+  START_HOUR = clamp(parseInt(settings.startHour,10) || DEFAULT_START_HOUR, 0, 23);
+  END_HOUR   = clamp(parseInt(settings.endHour,10) || DEFAULT_END_HOUR, 1, 24);
+  if(END_HOUR <= START_HOUR) END_HOUR = START_HOUR + 1;
+
+  SLOTS = [];
+  for(let h=START_HOUR; h<END_HOUR; h++){
+    SLOTS.push(`${String(h).padStart(2,"0")}:00`);
+  }
+}
+function rebuildDays(){
+  const d = Array.isArray(settings.days) ? settings.days : [...DEFAULT_DAYS];
+  const lbl = (settings.dayLabel && typeof settings.dayLabel === "object") ? settings.dayLabel : {...DEFAULT_DAY_LABEL};
+  DAYS = d.map(x=>String(x).trim()).filter(Boolean);
+  if(DAYS.length < 1) DAYS = [...DEFAULT_DAYS];
+  DAY_LABEL = {...lbl};
+
+  // ensure every day has a label
+  DAYS.forEach(code=>{
+    if(!DAY_LABEL[code]) DAY_LABEL[code] = String(code).toUpperCase();
+  });
+}
+
+/* ----------------- Apply title alignment ----------------- */
+function applyTitleAlign(){
+  const v = settings.titleAlign || "left";
+  if(v === "center"){
+    document.documentElement.style.setProperty("--title-align", "center");
+    document.documentElement.style.setProperty("--title-text-align", "center");
+  }else if(v === "right"){
+    document.documentElement.style.setProperty("--title-align", "flex-end");
+    document.documentElement.style.setProperty("--title-text-align", "right");
+  }else{
+    document.documentElement.style.setProperty("--title-align", "flex-start");
+    document.documentElement.style.setProperty("--title-text-align", "left");
+  }
+}
+
+/* ----------------- Apply grid theme ----------------- */
+function applyGridTheme(){
+  const gridA = clamp((+settings.gridOpacity||0)/100, 0, 1);
+  const lineA = clamp((+settings.lineOpacity||0)/100, 0, 1);
+  const headA = clamp((+settings.headOpacity||0)/100, 0, 1);
+  const cellA = clamp((+settings.cellOpacity||0)/100, 0, 1);
+
+  document.documentElement.style.setProperty("--grid-bg",   hexToRgba(settings.gridBgHex || "#0c1226", gridA));
+  document.documentElement.style.setProperty("--grid-line", hexToRgba(settings.gridLineHex || "#ffffff", lineA));
+  document.documentElement.style.setProperty("--dayhead-bg", hexToRgba(settings.dayBgHex || "#ffffff", headA));
+  document.documentElement.style.setProperty("--time-bg",   hexToRgba(settings.dayBgHex || "#ffffff", headA)); // same as header
+  document.documentElement.style.setProperty("--cell-bg",   hexToRgba(settings.cellBgHex || "#ffffff", cellA));
+}
+
+/* ----------------- Apply settings ----------------- */
+function applySettings(){
+  // days/time first
+  rebuildDays();
+  rebuildSlots();
+
+  // orientation
+  if(settings.orientation === "portrait"){
+    document.documentElement.style.setProperty("--page-w", "860px");
+    document.documentElement.style.setProperty("--page-h", "1180px");
+  }else{
+    document.documentElement.style.setProperty("--page-w", "1180px");
+    document.documentElement.style.setProperty("--page-h", "820px");
+  }
+
+  // overlay
+  document.documentElement.style.setProperty("--tt-overlay", `rgba(0,0,0,${clamp(+settings.overlay,0,80)/100})`);
+
+  // paper background: upload overrides theme
+  if(settings.customBgDataUrl){
+    document.documentElement.style.setProperty("--tt-bg", `url("${settings.customBgDataUrl}")`);
+    document.documentElement.style.setProperty("--gridwrap-solid", "rgba(10,16,34,.12)");
+  }else{
+    const t = PAPER_THEMES[settings.paperTheme] || PAPER_THEMES.midnight;
+    document.documentElement.style.setProperty("--tt-bg", `url("${t}")`);
+    document.documentElement.style.setProperty("--gridwrap-solid", "rgba(10,16,34,.40)");
+  }
+
+  // titles
+  $("#paperTitle").textContent = settings.ttTitle || "Your Timetable";
+  $("#paperSub").textContent = settings.ttSub || "";
+
+  applyTitleAlign();
+  applyGridTheme();
+
+  // reflect controls
+  $("#orientation").value = settings.orientation;
+  $("#overlay").value = String(settings.overlay ?? 28);
+  $("#paperTheme").value = settings.paperTheme || "midnight";
+
+  $("#ttTitle").value = settings.ttTitle || "";
+  $("#ttSub").value = settings.ttSub || "";
+  $("#titleAlign").value = settings.titleAlign || "left";
+
+  $("#gridBgHex").value = settings.gridBgHex || "#0c1226";
+  $("#gridLineHex").value = settings.gridLineHex || "#ffffff";
+  $("#dayBgHex").value = settings.dayBgHex || "#ffffff";
+  $("#cellBgHex").value = settings.cellBgHex || "#ffffff";
+
+  $("#gridOpacity").value = String(settings.gridOpacity ?? 16);
+  $("#lineOpacity").value = String(settings.lineOpacity ?? 16);
+  $("#headOpacity").value = String(settings.headOpacity ?? 10);
+  $("#cellOpacity").value = String(settings.cellOpacity ?? 4);
+
+  $("#startHour").value = String(settings.startHour ?? DEFAULT_START_HOUR);
+  $("#endHour").value = String(settings.endHour ?? DEFAULT_END_HOUR);
+}
+
+/* ----------------- Fill day/time selects ----------------- */
+function fillDaySelects(){
+  const sel1 = $("#day");
+  const sel2 = $("#m_day");
+  sel1.innerHTML = "";
+  sel2.innerHTML = "";
+  DAYS.forEach(d=>{
+    const opt1 = document.createElement("option");
+    opt1.value = d;
+    opt1.textContent = `${d} (${DAY_LABEL[d] || d})`;
+    sel1.appendChild(opt1);
+
+    const opt2 = document.createElement("option");
+    opt2.value = d;
+    opt2.textContent = `${d} (${DAY_LABEL[d] || d})`;
+    sel2.appendChild(opt2);
+  });
+}
+function fillTimeSelect(sel){
+  sel.innerHTML = "";
+  SLOTS.forEach((t,i)=>{
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = t;
+    sel.appendChild(opt);
+  });
+}
+
+/* ----------------- Days chips UI ----------------- */
+function renderDaysChips(){
+  const wrap = $("#daysChips");
+  wrap.innerHTML = "";
+
+  DAYS.forEach(code=>{
+    const chip = document.createElement("div");
+    chip.className = "chip";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = `${code} • ${DAY_LABEL[code] || code}`;
+
+    const rename = document.createElement("button");
+    rename.type = "button";
+    rename.className = "tinyBtn";
+    rename.textContent = "Rename";
+    rename.addEventListener("click", ()=>{
+      const cur = DAY_LABEL[code] || code;
+      const v = prompt(`Rename label for ${code}:`, cur);
+      if(v === null) return;
+      DAY_LABEL[code] = String(v).trim() || cur;
+      settings.dayLabel = {...DAY_LABEL};
+      save();
+      fillDaySelects();
+      renderDaysChips();
+      buildGrid();
+      render();
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "tinyBtn";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", ()=>{
+      if(DAYS.length <= 1){ alert("You must keep at least 1 day."); return; }
+      if(!confirm(`Remove day "${code}"? (classes on this day will be deleted)`)) return;
+
+      items = items.filter(it => it.day !== code);
+      DAYS = DAYS.filter(d=>d !== code);
+      delete DAY_LABEL[code];
+
+      settings.days = [...DAYS];
+      settings.dayLabel = {...DAY_LABEL};
+      save();
+
+      fillDaySelects();
+      renderDaysChips();
+      buildGrid();
+      render();
+    });
+
+    chip.appendChild(name);
+    chip.appendChild(rename);
+    chip.appendChild(remove);
+    wrap.appendChild(chip);
+  });
+}
+
+/* ----------------- Build Grid ----------------- */
+function buildGrid(){
+  const grid = $("#grid");
+  grid.style.gridTemplateColumns = `90px repeat(${DAYS.length}, 1fr)`;
+  grid.innerHTML = "";
+
+  const topLeft = document.createElement("div");
+  topLeft.className = "dayHead";
+  topLeft.textContent = "TIME";
+  grid.appendChild(topLeft);
+
+  for(const d of DAYS){
+    const h = document.createElement("div");
+    h.className = "dayHead";
+    h.textContent = (DAY_LABEL[d] || d).toUpperCase();
+    h.dataset.day = d;
+    h.title = "Click to rename day label";
+    h.addEventListener("click", ()=>{
+      const current = DAY_LABEL[d] || d;
+      const name = prompt(`Rename label for ${d}:`, current);
+      if(name === null) return;
+      DAY_LABEL[d] = String(name).trim() || current;
+      settings.dayLabel = {...DAY_LABEL};
+      save();
+      fillDaySelects();
+      renderDaysChips();
+      buildGrid();
+      render();
+    });
+    grid.appendChild(h);
+  }
+
+  for(let r=0; r<SLOTS.length; r++){
+    const timeCell = document.createElement("div");
+    timeCell.className = "timeCell";
+    timeCell.textContent = SLOTS[r];
+    timeCell.dataset.startIndex = String(r);
+    timeCell.title = "Click to edit time label";
+    timeCell.addEventListener("click", ()=>{
+      const current = SLOTS[r];
+      const name = prompt(`Edit time label:`, current);
+      if(name === null) return;
+      const v = String(name).trim() || current;
+      SLOTS[r] = v;
+
+      // persist labels
+      settings.slotLabels = [...SLOTS];
+      save();
+
+      buildGrid();
+      render();
+    });
+    grid.appendChild(timeCell);
+
+    for(let c=0; c<DAYS.length; c++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.day = DAYS[c];
+      cell.dataset.startIndex = String(r);
+
+      cell.addEventListener("dblclick", ()=>{
+        $("#day").value = DAYS[c];
+        $("#start").value = String(r);
+        $("#title").focus();
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // update paper mark
+  $("#paperMark").textContent = `${String(START_HOUR).padStart(2,"0")}:00–${String(END_HOUR).padStart(2,"0")}:00 • ${DAYS.join("–")}`;
+}
+
+/* ----------------- Render blocks ----------------- */
+function clearBlocks(){
+  document.querySelectorAll(".block").forEach(b=>b.remove());
+}
+function findCell(day, startIndex){
+  return document.querySelector(`.cell[data-day="${day}"][data-start-index="${startIndex}"]`);
+}
+function getEndTimeLabel(startIndex, dur){
+  const endIndex = startIndex + dur;
+  if(endIndex < SLOTS.length) return SLOTS[endIndex];
+  return `${String(END_HOUR).padStart(2,"0")}:00`;
+}
+function render(){
+  clearBlocks();
+  hidePopover(true);
+
+  // clamp items within current grid
+  items = items.filter(it => DAYS.includes(it.day));
+  items.forEach(it=>{
+    it.startIndex = clamp(parseInt(it.startIndex,10)||0, 0, SLOTS.length-1);
+    it.dur = clamp(parseInt(it.dur,10)||1, 1, SLOTS.length - it.startIndex);
+  });
+
+  const slotPx = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--slot-h")) || 56;
+
+  for(const it of items){
+    const cell = findCell(it.day, it.startIndex);
+    if(!cell) continue;
+
+    const block = document.createElement("div");
+    block.className = "block";
+    block.dataset.id = it.id;
+
+    const startT = SLOTS[it.startIndex] || "";
+    const endT = getEndTimeLabel(it.startIndex, it.dur);
+
+    block.style.background = styleBackground(it.color, it.style);
+    block.style.borderColor = hexToRgba(it.color, .55);
+    block.style.height = `${(it.dur * slotPx) - 12}px`;
+
+    block.innerHTML = `
+      <div class="bTop">
+        <div style="min-width:0">
+          <div class="bTitle">${escapeHtml(it.title || "Untitled")}</div>
+          <div class="bMeta">${escapeHtml(startT)}–${escapeHtml(endT)} • ${it.dur}h</div>
+        </div>
+        <button class="editMini" type="button" title="Edit">✎</button>
+      </div>
+      <div class="bTiny">
+        ${it.loc ? `<span class="pill">📍 ${escapeHtml(it.loc)}</span>` : ""}
+        ${it.lec ? `<span class="pill">👤 ${escapeHtml(it.lec)}</span>` : ""}
+      </div>
+    `;
+
+    block.querySelector(".editMini").addEventListener("click", (e)=>{
+      e.stopPropagation();
+      openEdit(it.id);
+    });
+
+    block.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const x = e.clientX, y = e.clientY;
+      setTimeout(()=> showPopover(it.id, x, y), 0);
+    });
+
+    block.addEventListener("contextmenu", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const x = e.clientX, y = e.clientY;
+      setTimeout(()=> showPopover(it.id, x, y), 0);
+    });
+
+    cell.appendChild(block);
+  }
+
+  save();
+}
+
+/* ----------------- Add/Clear ----------------- */
+$("#addBtn").addEventListener("click", ()=>{
+  const title = $("#title").value.trim();
+  if(!title){ $("#title").focus(); alert("Please enter Subject / Activity."); return; }
+
+  const day = $("#day").value;
+  const startIndex = clamp(parseInt($("#start").value,10), 0, SLOTS.length-1);
+  const dur = clamp(parseInt($("#dur").value,10), 1, SLOTS.length - startIndex);
+
+  items.push({
+    id: uid(),
+    title,
+    day,
+    startIndex,
+    dur,
+    loc: $("#loc").value.trim(),
+    lec: $("#lec").value.trim(),
+    notes: $("#notes").value.trim(),
+    color: $("#color").value,
+    style: $("#style").value
+  });
+
+  $("#title").value = "";
+  $("#loc").value = "";
+  $("#lec").value = "";
+  $("#notes").value = "";
+  render();
+});
+
+$("#clearBtn").addEventListener("click", ()=>{
+  if(!confirm("Clear all classes?")) return;
+  items = [];
+  render();
+});
+
+/* ----------------- Titles / Theme / Orientation / Overlay ----------------- */
+$("#ttTitle").addEventListener("input", ()=>{ settings.ttTitle = $("#ttTitle").value; applySettings(); save(); });
+$("#ttSub").addEventListener("input", ()=>{ settings.ttSub = $("#ttSub").value; applySettings(); save(); });
+
+$("#titleAlign").addEventListener("change", ()=>{
+  settings.titleAlign = $("#titleAlign").value;
+  applySettings(); save();
+});
+
+$("#paperTheme").addEventListener("change", ()=>{
+  settings.paperTheme = $("#paperTheme").value;
+  settings.customBgDataUrl = "";
+  applySettings(); save();
+});
+
+$("#orientation").addEventListener("change", ()=>{
+  settings.orientation = $("#orientation").value;
+  applySettings();
+  buildGrid();
+  render();
+  save();
+});
+
+$("#overlay").addEventListener("input", ()=>{
+  settings.overlay = parseInt($("#overlay").value,10);
+  applySettings(); save();
+});
+
+$("#bgUpload").addEventListener("change", async (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  settings.customBgDataUrl = await fileToDataUrl(file);
+  applySettings(); save();
+});
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ----------------- Grid Theme controls ----------------- */
+function hookColorInput(id, key){
+  const el = document.querySelector(id);
+  if(!el) return;
+  el.addEventListener("input", ()=>{
+    settings[key] = el.value;
+    applyGridTheme();
+    save();
+  });
+}
+function hookRangeInput(id, key){
+  const el = document.querySelector(id);
+  if(!el) return;
+  el.addEventListener("input", ()=>{
+    settings[key] = parseInt(el.value,10);
+    applyGridTheme();
+    save();
+  });
+}
+hookColorInput("#gridBgHex", "gridBgHex");
+hookColorInput("#gridLineHex", "gridLineHex");
+hookColorInput("#dayBgHex", "dayBgHex");
+hookColorInput("#cellBgHex", "cellBgHex");
+
+hookRangeInput("#gridOpacity", "gridOpacity");
+hookRangeInput("#lineOpacity", "lineOpacity");
+hookRangeInput("#headOpacity", "headOpacity");
+hookRangeInput("#cellOpacity", "cellOpacity");
+
+/* ----------------- Days management ----------------- */
+$("#addDayBtn").addEventListener("click", ()=>{
+  const code = ($("#newDayCode").value || "").trim();
+  const label = ($("#newDayLabel").value || "").trim();
+
+  if(!code){ alert("Please enter Day short code (e.g. Sat)."); return; }
+  if(DAYS.includes(code)){ alert("Day code already exists."); return; }
+
+  DAYS.push(code);
+  DAY_LABEL[code] = label || code.toUpperCase();
+
+  settings.days = [...DAYS];
+  settings.dayLabel = {...DAY_LABEL};
+
+  $("#newDayCode").value = "";
+  $("#newDayLabel").value = "";
+
+  save();
+  fillDaySelects();
+  renderDaysChips();
+  buildGrid();
+  render();
+});
+
+$("#resetDaysBtn").addEventListener("click", ()=>{
+  if(!confirm("Reset days back to Mon–Fri?")) return;
+  DAYS = [...DEFAULT_DAYS];
+  DAY_LABEL = {...DEFAULT_DAY_LABEL};
+
+  // delete items that are not in default days
+  items = items.filter(it => DAYS.includes(it.day));
+
+  settings.days = [...DAYS];
+  settings.dayLabel = {...DAY_LABEL};
+
+  save();
+  fillDaySelects();
+  renderDaysChips();
+  buildGrid();
+  render();
+});
+
+/* ----------------- Time range management ----------------- */
+function applyTimeRange(){
+  let s = parseInt($("#startHour").value,10);
+  let e = parseInt($("#endHour").value,10);
+
+  if(!Number.isFinite(s)) s = DEFAULT_START_HOUR;
+  if(!Number.isFinite(e)) e = DEFAULT_END_HOUR;
+
+  s = clamp(s, 0, 23);
+  e = clamp(e, 1, 24);
+  if(e <= s) e = s + 1;
+
+  settings.startHour = s;
+  settings.endHour = e;
+
+  // rebuild slots and clamp items
+  applySettings();
+
+  // If user previously edited slot labels, keep them if length matches
+  if(Array.isArray(settings.slotLabels) && settings.slotLabels.length === SLOTS.length){
+    SLOTS = [...settings.slotLabels];
+  }else{
+    // reset any old slot labels if mismatch
+    delete settings.slotLabels;
+  }
+
+  // clamp items to new slot range
+  items.forEach(it=>{
+    it.startIndex = clamp(parseInt(it.startIndex,10)||0, 0, SLOTS.length-1);
+    it.dur = clamp(parseInt(it.dur,10)||1, 1, SLOTS.length - it.startIndex);
+  });
+
+  save();
+  fillDaySelects();
+  fillTimeSelect($("#start"));
+  fillTimeSelect($("#m_start"));
+  buildGrid();
+  render();
+}
+
+$("#applyTimeBtn").addEventListener("click", ()=>{
+  if(!confirm("Apply new time range? Grid will rebuild.")) return;
+  applyTimeRange();
+});
+
+$("#resetTimeBtn").addEventListener("click", ()=>{
+  if(!confirm("Reset time back to 08:00–22:00?")) return;
+  settings.startHour = DEFAULT_START_HOUR;
+  settings.endHour = DEFAULT_END_HOUR;
+  delete settings.slotLabels;
+
+  $("#startHour").value = String(DEFAULT_START_HOUR);
+  $("#endHour").value = String(DEFAULT_END_HOUR);
+
+  applyTimeRange();
+});
+
+/* ----------------- Popover ----------------- */
+const pop = $("#popover");
+const popTitle = $("#popTitle");
+let popId = null;
+
+function showPopover(id, x, y){
+  const it = items.find(v=>v.id===id);
+  if(!it) return;
+  popId = id;
+  popTitle.textContent = it.title || "Class";
+
+  pop.classList.add("show");
+
+  const pad = 10;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  pop.style.left = "0px";
+  pop.style.top = "0px";
+  const rect = pop.getBoundingClientRect();
+
+  let left = x + 12;
+  let top = y + 12;
+  if(left + rect.width + pad > vw) left = x - rect.width - 12;
+  if(top + rect.height + pad > vh) top = y - rect.height - 12;
+
+  pop.style.left = `${Math.max(pad, left)}px`;
+  pop.style.top = `${Math.max(pad, top)}px`;
+}
+function hidePopover(force=false){
+  if(force){ pop.classList.remove("show"); popId=null; return; }
+  setTimeout(()=>{ pop.classList.remove("show"); popId=null; }, 0);
+}
+
+document.addEventListener("click", (e)=>{
+  if(!pop.classList.contains("show")) return;
+  const insidePop = e.target.closest("#popover");
+  const isBlock = e.target.closest(".block");
+  if(!insidePop && !isBlock) hidePopover(true);
+}, true);
+document.addEventListener("scroll", ()=> hidePopover(true), true);
+
+$("#popEdit").addEventListener("click", ()=>{
+  if(!popId) return;
+  const id = popId;
+  hidePopover(true);
+  openEdit(id);
+});
+$("#popDelete").addEventListener("click", ()=>{
+  if(!popId) return;
+  const id = popId;
+  hidePopover(true);
+  if(!confirm("Delete this class?")) return;
+  items = items.filter(x=>x.id !== id);
+  render();
+});
+
+/* ----------------- Edit Modal ----------------- */
+const modal = $("#modal");
+
+function openEdit(id){
+  const it = items.find(x=>x.id===id);
+  if(!it) return;
+  editingId = id;
+
+  $("#m_title").value = it.title || "";
+
+  fillDaySelects();
+  fillTimeSelect($("#m_start"));
+
+  $("#m_day").value = it.day;
+  $("#m_start").value = String(it.startIndex);
+
+  $("#m_dur").value = String(it.dur);
+  $("#m_loc").value = it.loc || "";
+  $("#m_lec").value = it.lec || "";
+  $("#m_notes").value = it.notes || "";
+  $("#m_color").value = it.color || "#7c5cff";
+  $("#m_style").value = it.style || "solid";
+
+  modal.classList.add("show");
+}
+function closeEdit(){ modal.classList.remove("show"); editingId=null; }
+$("#closeModal").addEventListener("click", closeEdit);
+modal.addEventListener("click", (e)=>{ if(e.target === modal) closeEdit(); });
+
+/* Preview modal funcs exist later too */
+document.addEventListener("keydown", (e)=>{ if(e.key === "Escape") { closeEdit(); closePreview(); } });
+
+$("#saveEdit").addEventListener("click", ()=>{
+  const it = items.find(x=>x.id===editingId);
+  if(!it) return;
+
+  it.title = $("#m_title").value.trim() || "Untitled";
+  it.day = $("#m_day").value;
+  it.startIndex = clamp(parseInt($("#m_start").value,10), 0, SLOTS.length-1);
+  it.dur = clamp(parseInt($("#m_dur").value,10), 1, SLOTS.length - it.startIndex);
+  it.loc = $("#m_loc").value.trim();
+  it.lec = $("#m_lec").value.trim();
+  it.notes = $("#m_notes").value.trim();
+  it.color = $("#m_color").value;
+  it.style = $("#m_style").value;
+
+  closeEdit();
+  render();
+});
+
+$("#deleteItem").addEventListener("click", ()=>{
+  if(!editingId) return;
+  if(!confirm("Delete this class?")) return;
+  items = items.filter(x=>x.id !== editingId);
+  closeEdit();
+  render();
+});
+
+/* ----------------- Compact for export/print ----------------- */
+function computeCompactSlotHeight(){
+  const frame = $("#pageFrame");
+  const rect = frame.getBoundingClientRect();
+  const paperH = rect.height;
+  const topArea = 64;
+  const paddingBottom = 12;
+  const headerRow = 44;
+  const usable = paperH - topArea - paddingBottom - headerRow - 2;
+  const slot = Math.floor(usable / Math.max(1, SLOTS.length));
+  return clamp(slot, 24, 56);
+}
+async function withCompactLayout(fn){
+  const prev = getComputedStyle(document.documentElement).getPropertyValue("--slot-h").trim() || "56px";
+  const compact = computeCompactSlotHeight();
+  document.documentElement.style.setProperty("--slot-h", `${compact}px`);
+  $("#gridWrap").scrollTop = 0;
+  render();
+
+  await new Promise(r=>setTimeout(r, 60));
+  try{ await fn(); }
+  finally{
+    document.documentElement.style.setProperty("--slot-h", prev);
+    render();
+  }
+}
+
+/* ----------------- Print ----------------- */
+$("#printBtn").addEventListener("click", ()=>{
+  hidePopover(true);
+
+  withCompactLayout(async ()=>{
+    const paper = $("#pageFrame").cloneNode(true);
+    const cw = paper.querySelector("#gridWrap") || paper.querySelector(".gridWrap");
+    if(cw) cw.style.overflow = "visible";
+
+    const vars = getComputedStyle(document.documentElement);
+    const pageW = vars.getPropertyValue("--page-w").trim();
+    const pageH = vars.getPropertyValue("--page-h").trim();
+    const ttBg = vars.getPropertyValue("--tt-bg").trim();
+    const ttOverlay = vars.getPropertyValue("--tt-overlay").trim();
+    const gridBg = vars.getPropertyValue("--grid-bg").trim();
+    const gridLine = vars.getPropertyValue("--grid-line").trim();
+    const slotH = vars.getPropertyValue("--slot-h").trim();
+    const dayBg = vars.getPropertyValue("--dayhead-bg").trim();
+    const timeBg = vars.getPropertyValue("--time-bg").trim();
+    const cellBg = vars.getPropertyValue("--cell-bg").trim();
+    const gridwrapSolid = vars.getPropertyValue("--gridwrap-solid").trim();
+
+    const win = window.open("", "_blank");
+    if(!win){ alert("Popup blocked. Allow popups to print."); return; }
+
+    // remove edit buttons
+    paper.querySelectorAll(".editMini").forEach(b=>b.remove());
+
+    win.document.open();
+    win.document.write(`
+<!doctype html><html><head><meta charset="utf-8"/><title>Print Timetable</title>
+<style>
+*{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+body{ margin:0; background:white; display:flex; justify-content:center; padding:12px; font-family: ui-sans-serif, system-ui; }
+.pageFrame{ width:${pageW}; height:${pageH}; position:relative; overflow:hidden; border:1px solid #ddd;
+  background-image: linear-gradient(0deg, ${ttOverlay}, ${ttOverlay}), ${ttBg};
+  background-size: cover; background-position:center; background-repeat:no-repeat; border-radius:18px; }
+.gridWrap{ position:absolute; inset:0; padding:64px 12px 12px; overflow: visible; background:${gridwrapSolid}; }
+.grid{ display:grid; grid-template-columns: 90px repeat(${DAYS.length}, 1fr); border:1px solid ${gridLine}; background:${gridBg}; border-radius:14px; overflow:hidden; }
+.cell,.timeCell,.dayHead{ border-right:1px solid ${gridLine}; border-bottom:1px solid ${gridLine}; padding:10px; position:relative; }
+.dayHead{ color:#fff; font-weight:1000; font-size:12px; text-align:center; letter-spacing:.35px; background:${dayBg}; }
+.timeCell{ color:rgba(255,255,255,.92); font-size:12px; text-align:right; padding-right:12px; background:${timeBg}; font-variant-numeric: tabular-nums; }
+.cell{ height:${slotH}; background:${cellBg}; }
+
+/* FULL block styles (so details show in print) */
+.block{
+  position:absolute;
+  inset:6px;
+  border-radius:14px;
+  padding:10px 10px 9px;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 26px rgba(0,0,0,.30);
+  overflow:hidden;
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.bTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.bTitle{ font-weight:1000; font-size:13px; line-height:1.1; letter-spacing:.2px; color:#fff; }
+.bMeta{ font-size:11px; opacity:.95; color: rgba(255,255,255,.90); margin-top:6px; }
+.bTiny{ font-size:11px; opacity:.95; display:flex; gap:8px; flex-wrap:wrap; }
+.pill{
+  display:inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.14);
+  font-weight: 900;
+  color:#fff;
+  white-space:nowrap;
+}
+
+/* transparent top */
+.paperTop{ position:absolute; left:0; right:0; top:0; padding:14px 18px 12px; background:transparent; display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+.paperTitle{ font-weight:1000; color:#fff; font-size:20px; text-shadow:0 10px 26px rgba(0,0,0,.45); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.paperSub{ margin-top:6px; font-size:12px; color:rgba(255,255,255,.92); text-shadow:0 10px 26px rgba(0,0,0,.45); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.paperMark{ font-size:12px; color:rgba(255,255,255,.92); border:1px solid rgba(255,255,255,.18); padding:8px 10px; border-radius:999px; background: rgba(0,0,0,.14); }
+@page{ margin: 10mm; }
+</style></head><body>${paper.outerHTML}
+<script>window.onload=()=>{window.focus();window.print();};<\/script></body></html>`);
+    win.document.close();
+  });
+});
+
+/* ----------------- Preview + Download (SAVE button) ----------------- */
+const previewModal = $("#previewModal");
+const previewImg = $("#previewImg");
+let lastPreviewDataUrl = "";
+
+function openPreview(){ previewModal.classList.add("show"); }
+function closePreview(){ previewModal.classList.remove("show"); }
+$("#closePreview").addEventListener("click", closePreview);
+previewModal.addEventListener("click", (e)=>{ if(e.target === previewModal) closePreview(); });
+
+$("#dlSize").addEventListener("change", ()=>{
+  $("#customSizeRow").style.display = ($("#dlSize").value === "custom") ? "grid" : "none";
+});
+
+function getDownloadDims(){
+  const v = $("#dlSize").value;
+
+  if(v === "auto"){
+    const w = clamp(Math.floor(window.screen.width * window.devicePixelRatio), 1200, 6000);
+    const h = clamp(Math.floor(window.screen.height * window.devicePixelRatio), 900, 6000);
+    return {w, h};
+  }
+  if(v === "a4") return {w:3508, h:2480};
+  if(v === "a3") return {w:4961, h:3508};
+  if(v === "1080p") return {w:1920, h:1080};
+  if(v === "2k") return {w:2560, h:1440};
+
+  const w = clamp(parseInt($("#customW").value,10)||2400, 800, 10000);
+  const h = clamp(parseInt($("#customH").value,10)||1600, 800, 10000);
+  return {w,h};
+}
+
+/* ✅ FIXED: Sharp preview/export = same as print (no blur) */
+async function generatePreview(){
+  hidePopover(true);
+
+  await withCompactLayout(async ()=>{
+    const clone = $("#pageFrame").cloneNode(true);
+
+    const cw = clone.querySelector("#gridWrap") || clone.querySelector(".gridWrap");
+    if(cw){
+      cw.style.overflow = "visible";
+      cw.scrollTop = 0;
+    }
+
+    // remove edit buttons
+    clone.querySelectorAll(".editMini").forEach(b=>b.remove());
+
+    // mount off-screen (needed for correct layout)
+    const holder = document.createElement("div");
+    holder.style.position = "fixed";
+    holder.style.left = "-99999px";
+    holder.style.top = "0";
+    holder.style.width = "auto";
+    holder.style.height = "auto";
+    holder.style.pointerEvents = "none";
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+
+    // wait fonts + images
+    try{
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    }catch(e){}
+    await waitForImages(clone);
+
+    const {w,h} = getDownloadDims();
+
+    // measure in CSS pixels
+    const rect = clone.getBoundingClientRect();
+    const cssW = rect.width || clone.scrollWidth;
+    const cssH = rect.height || clone.scrollHeight;
+
+    // pick scale so canvas is NOT smaller than target (prevents upscaling blur)
+    let scale = Math.max(w / cssW, h / cssH);
+    scale = clamp(scale, 1, 6);
+
+    const canvas = await html2canvas(clone, {
+      backgroundColor: null,
+      useCORS: true,
+      allowTaint: false,
+      scale: scale,
+      width: Math.ceil(cssW),
+      height: Math.ceil(cssH),
+      windowWidth: Math.ceil(cssW),
+      windowHeight: Math.ceil(cssH),
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    // if already exact size, use direct
+    if(canvas.width === w && canvas.height === h){
+      lastPreviewDataUrl = canvas.toDataURL("image/png");
+      previewImg.src = lastPreviewDataUrl;
+      holder.remove();
+      return;
+    }
+
+    // high-quality scale to exact output
+    const out = document.createElement("canvas");
+    out.width = w;
+    out.height = h;
+    const ctx = out.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.clearRect(0,0,w,h);
+    ctx.drawImage(canvas, 0, 0, w, h);
+
+    lastPreviewDataUrl = out.toDataURL("image/png");
+    previewImg.src = lastPreviewDataUrl;
+
+    holder.remove();
+  });
+}
+
+$("#saveBtn").addEventListener("click", async ()=>{
+  openPreview();
+  await generatePreview();
+});
+
+$("#regenPreview").addEventListener("click", async ()=>{
+  await generatePreview();
+});
+
+$("#downloadPng").addEventListener("click", ()=>{
+  if(!lastPreviewDataUrl){
+    alert("Preview not ready yet. Click Regenerate Preview.");
+    return;
+  }
+  let name = ($("#dlName").value || "timetable.png").trim();
+  if(!name.toLowerCase().endsWith(".png")) name += ".png";
+
+  const a = document.createElement("a");
+  a.href = lastPreviewDataUrl;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
+/* ----------------- Refresh ----------------- */
+$("#refreshBtn").addEventListener("click", ()=> render());
+
+/* ----------------- Slot labels persistence (optional) ----------------- */
+function applySavedSlotLabels(){
+  if(Array.isArray(settings.slotLabels) && settings.slotLabels.length === SLOTS.length){
+    SLOTS = [...settings.slotLabels];
+  }else{
+    delete settings.slotLabels;
+  }
+}
+
+/* ----------------- Init ----------------- */
+load();
+rebuildDays();
+rebuildSlots();
+
+// restore slot labels if any
+applySavedSlotLabels();
+
+applySettings();
+fillDaySelects();
+fillTimeSelect($("#start"));
+fillTimeSelect($("#m_start"));
+renderDaysChips();
+buildGrid();
+save();
+render();
+
+/* ensure selects update if days/time rebuild */
+</script>
+</body>
+</html>
